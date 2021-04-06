@@ -10,10 +10,11 @@ from flask import  request, jsonify
 import json
 import logging
 import requests
+import sys
+import os
 # Initialize Flask
 app = Flask(__name__)
 api = Api(app)
-catalog_server_URL     = 'http://127.0.0.2:5000/'
 
 
 # In[ ]:
@@ -30,24 +31,25 @@ def buy(id):
     constructed_paylod = {}
     quered_topic = ''
     asked_by = ''
-    print("we are in buy that is for buy")
     if id:
+        logging.info("request received: received request for buying item %s"%(str(id)))
         headers = {"Content-Type": "application/json"}
         constructed_paylod ={}
         asked_by = "\""+"$id\""
         quered_topic = "\""+str(id)+"\""
         constructed_paylod[asked_by] = quered_topic
-        #call catalog server
         constructed_paylod = [constructed_paylod]
         constructed_paylod = str(constructed_paylod)
         constructed_paylod =constructed_paylod.replace("'", '')
-        print("going to buy this item to ask catalog ",constructed_paylod)
-        response = requests.get(catalog_server_URL, data=constructed_paylod, headers=headers)
-        response = response.content
-        record = json.loads(response)
+        response = requests.get(catalog_server_URL+str(id), data={}, headers={})
+        record = json.loads(response.content.decode('utf-8'))
+
         record = record[0]
-        print(type(record),record)
-        if record:
+        #print(type(record),record)
+        try:
+            if record["response"]=="0":
+                response ="We do not have enough of this item"
+        except:
             constructed_paylod ={}
             asked_by = "\""+"$id\""
             quered_topic = "\""+str(id)+"\""
@@ -56,11 +58,10 @@ def buy(id):
             constructed_paylod = [constructed_paylod]
             constructed_paylod = str(constructed_paylod)
             constructed_paylod =constructed_paylod.replace("'", '')
-            print("going to buy this item to ask catalog ",constructed_paylod)
+            #print("we have this item in catalog let decrease it by askin the catalog to do that for us ",constructed_paylod)
             response = requests.post(catalog_server_URL, data=constructed_paylod, headers=headers)
-            response = response.content
-            record = json.loads(response)
-            print("after updating from catalog",type(record),record)
+            record = json.loads(response.content.decode('utf-8'))
+            record = record[0]
             if record["response"]=="1":
                 response ="Item numbers was decreased on the database sucessfully"
             elif record["response"]=="0":
@@ -71,29 +72,22 @@ def buy(id):
                 response ="This is not a valid request"
     else:
         response ="This is not a valid request"
+        logging.info("request received: This is not a valid request ")
+    logging.info("request processed: received request for buying item %s processed"%(str(id)))
     return jsonify({"reponse":response})
-#     json_data = json.loads(request.data.decode(encoding='UTF-8'))
-#     logging.info(json_data)
-#     new_records = []
-    print("we are order server buy record ",record)
-#     with open('/tmp/data.txt', 'r') as f:
-#         data = f.read()
-#         records = json.loads(data)
-#         for r in records:
-#             if r['name'] == record['name']:
-#                 continue
-#             new_records.append(r)
-#     with open('/tmp/data.txt', 'w') as f:
-#         f.write(json.dumps(new_records, indent=2))
-#     logging.info(json_data)
+
     return jsonify(record)
 
 
 # In[ ]:
 
 
-# order_log_file = 'orderserver_log_file.log'
-# logging.basicConfig(filename=order_log_file, filemode='w', format='%(asctime)s - %(message)s', level=logging.INFO)
+order_log_file = 'orderserver_log_file.log'
+logging.basicConfig(filename=order_log_file, filemode='w', format='%(asctime)s - %(message)s', level=logging.INFO)
 if __name__ == "__main__":
-    app.run(host="127.0.0.3", port=5000)
+    server_IP = sys.argv[1]
+    catalog_server_URL = "http://"+sys.argv[2]+":5000/"
+    print("running order microservice..........")
+    logging.info("running order microservice..........")
+    app.run(host=server_IP, port=5000)
 

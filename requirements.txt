@@ -1,0 +1,4 @@
+python3 
+requests python library
+flask
+flask-restful
