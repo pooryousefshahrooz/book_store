@@ -1,0 +1,9 @@
+You need to run each microservice and each replication of the microservice with its IP addresses and port number. 
+
+We have defined the IP address and port number that each microservice will be running on in the  "each\_server\_IP.txt" file. 
+
+For example, for running the order microservice, you need to run the command "python3 order\_microservice.py 127.0.0.4 5004" where 127.0.0.4 is the IP address and 5004 is the port number that this replication of the order microservice will be running on. 
+
+For running the frond-end microservice, you do not need to specify the IP address and port number. Just running the command "python3 front\_end\_caching" is enough. 
+
+Note that, if you want to have multiple replications of each microservice, you have to define the IP address and the port number in the  "each\_server\_IP.txt" file and run that replication separately manually in the terminal.

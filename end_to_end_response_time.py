@@ -31,13 +31,17 @@ for line in each_server_IP_file:
         server_IP = server_IP.replace('\n','')
         server_IP = server_IP.replace('\t','')  
         each_server_IP[server_name]= server_IP
-front_end_server_URL = 'http://'+each_server_IP['front']+":5000/"
+front_end_server_URL = 'http://'+each_server_IP['front']+":5001/"
+
+
+
 
 
 
 request_types = ['GET','PUT','DELETE']
+# request_types = ['PUT']
 
-end_to_end_response_time_results = 'end_to_end_response_time_results.csv'
+end_to_end_response_time_results = 'end_to_end_response_time_results_replication.csv'
 for i in range(1000):
     time.sleep(3)
     random_number = random.randint(0,len(request_types)-1)
@@ -48,7 +52,7 @@ for i in range(1000):
         response = response.content
     elif request_type =='PUT':
         headers = {"Content-Type": "application/json"}
-        data ='{"$topic":"testing","$cost":24,"$number":2, "$title": "Post Title"}'
+        data ='[{"$topic":"testing","$cost":24,"$number":2, "$title": "Post Title"}]'
         response = requests.put(front_end_server_URL, data=data, headers=headers)
         
     elif request_type =='DELETE':
@@ -62,7 +66,6 @@ for i in range(1000):
         newFileWriter = csv.writer(newFile)
         newFileWriter.writerow([request_type,str(E_to_E_time)]) 
 
-os.system('scp  '+each_server_IP['order']+':orderserver_log_file.log  ./')
-os.system('scp  '+each_server_IP['catalog']+':catalog_log_file.log  ./')
+
     
 

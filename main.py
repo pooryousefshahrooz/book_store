@@ -34,7 +34,8 @@ from multiprocessing import Pool
                                                                                 
                                                                                 
 processes = ('front_server_runner.py', 'catalog_server_runner.py', 'order_server_runner.py')                                    
-                                                  
+# processes = ('catalog_server_runner.py', 'order_server_runner.py')                                    
+                         
                                                                                 
 def run_process(process):                                                             
     os.system('python {}'.format(process))                                       

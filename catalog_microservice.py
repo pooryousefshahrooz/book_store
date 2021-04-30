@@ -12,6 +12,7 @@ import csv
 import logging
 import sys
 import os
+import time
 # Initialize Flask
 app = Flask(__name__)
 api = Api(app)
@@ -32,6 +33,8 @@ global_id_counter = 1
 @app.route('/', methods=['GET'])
 def default_query():
     """an item is specified and all relevant details are returned"""
+    # we add this 20 milliseconds to evaluate the benefit of caching
+    time.sleep(0.02)
     items_found = []
     if request.data:
         json_data = json.loads(request.data.decode(encoding='UTF-8'))
@@ -72,6 +75,8 @@ def default_query():
     
 @app.route('/<string:topic>', methods=['GET'])
 def query_records_topic(topic):
+    # we add this 20 milliseconds to evaluate the benefit of caching
+    time.sleep(0.02)
     """a topic is specified and the server returns all matching entries"""
     logging.info("request for GET:topic received: "+str(topic))
     items_found = []
@@ -90,23 +95,47 @@ def query_records_topic(topic):
     
 @app.route('/<int:id>', methods=['GET'])
 def query_records(id):
-    logging.info("request for GET id received: "+str(id))
-    items_found = []
-    
-    for record,values in each_book_info.items():
-        #print('each_book_info',each_book_info)
-        if int(record) == int(id):
-            values["$item_number"] = record
-            items_found.append(values)
-            logging.info("request for GET id processed: "+str(items_found))
-            return jsonify(items_found)
-    logging.info("request for GET id processed: "+str(id))
-    return jsonify([{"response":"0"}])
+    # we add this 20 milliseconds to evaluate the benefit of caching
+    if int(id)==4444:
+        return jsonify([{"response":"heart_beat"}])
+    else:
+        time.sleep(0.02)    
+        if int(id)>2021 and int(id)<4021:
+            ID = int(id)%2021
+            try:
+                for ID,values in each_book_info.items():
+                    if int(json_data["$id"]) == int(ID):
+                        if int(values["number"])>0:
+                            each_book_info[ID] = {"title":values['title'],"number":(int(values['number'])-1),"cost":values['cost'],"topic":values['topic']}
+                            response = "1"
+                        else:
+                            response = "0"
+                        exist = True
+                        break
+
+            except:
+                response = "-2"
+
+        else:
+
+            logging.info("request for GET id received: "+str(id))
+            items_found = []
+
+            for record,values in each_book_info.items():
+                #print('each_book_info',each_book_info)
+                if int(record) == int(id):
+                    values["$item_number"] = record
+                    items_found.append(values)
+                    logging.info("request for GET id processed: "+str(items_found))
+                    return jsonify(items_found)
+            logging.info("request for GET id processed: "+str(id))
+            return jsonify([{"response":"0"}])
     
 
 @app.route('/', methods=['PUT'])
 def create_record():
-    
+    # we add this 20 milliseconds to evaluate the benefit of caching
+    time.sleep(0.02)  
     json_data = json.loads(request.data.decode(encoding='UTF-8'))
     json_data = json_data[0]
     logging.info("request for PUT received: "+str(json_data))
@@ -125,7 +154,24 @@ def create_record():
             each_book_info[global_id_counter] = {"title":json_data["$title"] ,"number":json_data["$number"] ,"cost":json_data["$cost"] ,"topic":json_data["$topic"] }    
             global_id_counter+=1
             response = "Item was added successfully!"
+        available_catalog_servers  = fault_tolerent_object.ongoing_replica_checker("catalog")
         
+        headers = {"Content-Type": "application/json"}
+        for key,value in json_data.items():
+            if value:
+                quered_topic = "\""+str(value)+"\""
+                asked_by = "\""+str(key)+"\""
+                constructed_paylod[asked_by] = quered_topic
+        #call catalog server
+        result = set(['topic','title','number','cost']) - set(constructed_paylod)
+        if result:
+            constructed_paylod = [constructed_paylod]
+            constructed_paylod = str(constructed_paylod)
+            constructed_paylod =constructed_paylod.replace("'", '')
+        
+        for replicated_catalog_server_URL in available_catalog_servers:
+            if replicated_catalog_server_URL not in catalog_server_URL:
+                response = requests.put(replicated_catalog_server_URL, data=constructed_paylod, headers=headers)
     else:
         response = 'Please add valid records!'
     logging.info("request for PUT processed: "+response)
@@ -134,6 +180,9 @@ def create_record():
 @app.route('/', methods=['POST'])
 def update_record():
     """allows the cost of an item to be updated"""
+    
+    # we add this 20 milliseconds to evaluate the benefit of caching
+    time.sleep(0.02)
     json_data = json.loads(request.data.decode(encoding='UTF-8'))
     logging.info("request for POST received: "+str(json_data))
     items_found = []
@@ -229,7 +278,8 @@ logging.basicConfig(filename=catalog_log_file, filemode='w', format='%(asctime)s
 
 if __name__ == "__main__":
     server_IP = sys.argv[1]
-    print("running catalog microservice..........")
+    server_port = sys.argv[2]
+    print("running catalog microservice..........",server_IP)
     logging.info("running catalog microservice..........")
-    app.run(host=server_IP, port=5000)
+    app.run(host=server_IP, port=int(server_port))
 
